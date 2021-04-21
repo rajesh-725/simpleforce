@@ -280,6 +280,33 @@ func (client *Client) DownloadFile(contentVersionID string, filepath string) err
 	return err
 }
 
+//Get the List of all available objects and their metadata for your organization’s data
+func (client *Client) DescribeGlobal() *SObjectMeta {
+	apiPath := fmt.Sprintf("/services/data/v%s/sobjects", client.apiVersion)
+
+	baseURL := strings.TrimRight(client.baseURL, "/")
+	url := fmt.Sprintf("%s%s", baseURL, apiPath)
+
+	// Get the objects
+	httpClient := client.httpClient
+	req, err := http.NewRequest("GET", url, nil)
+	req.Header.Add("Content-Type", "application/json; charset=UTF-8")
+	req.Header.Add("Accept", "application/json")
+	req.Header.Add("Authorization", "Bearer "+client.sessionID)
+	// resp, err := http.Get(url)
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	var meta SObjectMeta
+	err = json.Unmarshal(resp, &meta)
+	if err != nil {
+		return nil
+	}
+	return &meta
+}
+
 func parseHost(input string) string {
 	parsed, err := url.Parse(input)
 	if err == nil {
