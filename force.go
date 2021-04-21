@@ -280,14 +280,11 @@ func (client *Client) DownloadFile(contentVersionID string, filepath string) err
 	return err
 }
 
-//Get the List of all available objects and their metadata for your organization’s data
-func (client *Client) DescribeGlobal() *SObjectMeta {
+//Get the List of all available objects and their metadata for your organization's data
+func (client *Client) DescribeGlobal() (*SObjectMeta, error) {
 	apiPath := fmt.Sprintf("/services/data/v%s/sobjects", client.apiVersion)
-
 	baseURL := strings.TrimRight(client.baseURL, "/")
-	url := fmt.Sprintf("%s%s", baseURL, apiPath)
-
-	// Get the objects
+	url := fmt.Sprintf("%s%s", baseURL, apiPath) // Get the objects
 	httpClient := client.httpClient
 	req, err := http.NewRequest("GET", url, nil)
 	req.Header.Add("Content-Type", "application/json; charset=UTF-8")
@@ -296,15 +293,23 @@ func (client *Client) DescribeGlobal() *SObjectMeta {
 	// resp, err := http.Get(url)
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer resp.Body.Close()
+
 	var meta SObjectMeta
-	err = json.Unmarshal(resp, &meta)
+
+	respData, err := ioutil.ReadAll(resp.Body)
+	log.Println(logPrefix, fmt.Sprintf("status code %d", resp.StatusCode))
 	if err != nil {
-		return nil
+		log.Println(logPrefix, "error while reading all body")
 	}
-	return &meta
+
+	err = json.Unmarshal(respData, &meta)
+	if err != nil {
+		return nil, err
+	}
+	return &meta, nil
 }
 
 func parseHost(input string) string {
